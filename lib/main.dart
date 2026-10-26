@@ -1,21 +1,38 @@
-
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'config/supabase_config.dart';
 import 'providers/book_provider.dart';
+import 'providers/reading_note_provider.dart';
 import 'repositories/book_repository.dart';
-import 'screens/explore_screen.dart';
+import 'repositories/reading_note_repository.dart';
+import 'services/book_api_service.dart';
+import 'services/reading_note_service.dart';
 import 'screens/home_screen.dart';
+import 'screens/explore_screen.dart';
 import 'screens/library_screen.dart';
 import 'screens/profile_screen.dart';
-import 'services/book_api_service.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: SupabaseConfig.projectUrl,
+    publishableKey: SupabaseConfig.publishableKey,
+  );
+
   runApp(const BookNestApp());
 }
 
+
 class BookNestApp extends StatelessWidget {
-  const BookNestApp({super.key});
+  const BookNestApp({
+    super.key,
+    this.readingNoteRepository,
+  });
+
+  final ReadingNoteRepository? readingNoteRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -25,16 +42,30 @@ class BookNestApp extends StatelessWidget {
           create: (_) => BookApiService(),
           dispose: (_, service) => service.dispose(),
         ),
-        ProxyProvider<BookApiService, BookRepository>(
-          update: (_, apiService, _) =>
-              BookRepository(apiService: apiService),
+        Provider<BookRepository>(
+          create: (context) => BookRepository(
+            apiService: context.read<BookApiService>(),
+          ),
         ),
-        ChangeNotifierProxyProvider<BookRepository, BookProvider>(
+        ChangeNotifierProvider<BookProvider>(
           create: (context) => BookProvider(
             repository: context.read<BookRepository>(),
           ),
-          update: (_, repository, previousProvider) =>
-              previousProvider ?? BookProvider(repository: repository),
+        ),
+        Provider<ReadingNoteService>(
+          create: (_) => ReadingNoteService(),
+        ),
+        Provider<ReadingNoteRepository>(
+          create: (context) =>
+              readingNoteRepository ??
+              ReadingNoteRepository(
+                service: context.read<ReadingNoteService>(),
+              ),
+        ),
+        ChangeNotifierProvider<ReadingNoteProvider>(
+          create: (context) => ReadingNoteProvider(
+            repository: context.read<ReadingNoteRepository>(),
+          ),
         ),
       ],
       child: MaterialApp(
@@ -46,32 +77,12 @@ class BookNestApp extends StatelessWidget {
             seedColor: const Color(0xFF496A81),
             brightness: Brightness.light,
           ),
-          scaffoldBackgroundColor: const Color(0xFFF7F8FA),
+          scaffoldBackgroundColor: const Color(0xFFF5F8FC),
           appBarTheme: const AppBarTheme(
+            backgroundColor: Color(0xFFF5F8FC),
+            foregroundColor: Color(0xFF173B57),
+            elevation: 0,
             centerTitle: false,
-            backgroundColor: Color(0xFFF7F8FA),
-            foregroundColor: Color(0xFF233746),
-          ),
-          inputDecorationTheme: InputDecorationTheme(
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(
-                color: Color(0xFFE0E5EA),
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(
-                color: Color(0xFF496A81),
-                width: 1.5,
-              ),
-            ),
           ),
         ),
         home: const MainNavigationScreen(),
@@ -79,6 +90,7 @@ class BookNestApp extends StatelessWidget {
     );
   }
 }
+
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -100,9 +112,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     final screens = [
-      HomeScreen(
-        onExploreTap: () => _selectTab(1),
-      ),
+      HomeScreen(onExploreTap: () => _selectTab(1)),
       const ExploreScreen(),
       const LibraryScreen(),
       const ProfileScreen(),
@@ -119,21 +129,21 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
+            selectedIcon: Icon(Icons.home_rounded),
             label: 'Home',
           ),
           NavigationDestination(
-            icon: Icon(Icons.search),
+            icon: Icon(Icons.search_rounded),
             label: 'Explore',
           ),
           NavigationDestination(
-            icon: Icon(Icons.bookmarks_outlined),
-            selectedIcon: Icon(Icons.bookmarks),
+            icon: Icon(Icons.bookmark_border_rounded),
+            selectedIcon: Icon(Icons.bookmark_rounded),
             label: 'My Library',
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
+            icon: Icon(Icons.person_outline_rounded),
+            selectedIcon: Icon(Icons.person_rounded),
             label: 'Profile',
           ),
         ],
