@@ -109,5 +109,51 @@ void main() {
         service.dispose();
       }
     });
+    test('JSON bukan objek menghasilkan FormatException', () async {
+      final client = MockClient((request) async {
+        return http.Response('[]', 200);
+      });
+
+      final service = BookApiService(client: client);
+
+      try {
+        expect(
+          service.searchBooks('flutter'),
+          throwsA(isA<FormatException>()),
+        );
+      } finally {
+        service.dispose();
+      }
+    });
+
+    test('entri docs yang bukan objek dilewati', () async {
+      final client = MockClient((request) async {
+        return http.Response(
+          jsonEncode({
+            'docs': [
+              'data tidak valid',
+              {
+                'key': '/works/OL123W',
+                'title': 'Learning Flutter',
+              },
+            ],
+          }),
+          200,
+        );
+      });
+
+      final service = BookApiService(client: client);
+
+      try {
+        final books = await service.searchBooks('flutter');
+
+        expect(books, hasLength(1));
+        expect(books.single.id, '/works/OL123W');
+      } finally {
+        service.dispose();
+      }
+    });
+
   });
 }
+
