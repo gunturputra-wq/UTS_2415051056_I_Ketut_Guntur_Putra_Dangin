@@ -8,10 +8,12 @@ import 'package:book_nest/models/book.dart';
 import 'package:book_nest/providers/book_provider.dart';
 import 'package:book_nest/repositories/book_repository.dart';
 import 'package:book_nest/screens/explore_screen.dart';
+import 'package:book_nest/widgets/book_card.dart';
 
 class FakeBookRepository implements BookRepository {
   String? lastQuery;
   bool shouldFail = false;
+  List<Book> result = [];
   Completer<List<Book>>? completer;
 
   @override
@@ -26,7 +28,7 @@ class FakeBookRepository implements BookRepository {
       throw Exception('Network error');
     }
 
-    return [];
+    return result;
   }
 }
 
@@ -83,7 +85,7 @@ void main() {
     expect(find.text('Buku tidak ditemukan'), findsOneWidget);
   });
 
-  testWidgets('menampilkan indikator ketika pencarian sedang berlangsung',
+  testWidgets('menampilkan indikator ketika pencarian berlangsung',
       (WidgetTester tester) async {
     repository.completer = Completer<List<Book>>();
 
@@ -112,5 +114,27 @@ void main() {
     expect(provider.status, BookStatus.error);
     expect(find.text('Buku belum bisa dimuat'), findsOneWidget);
     expect(find.text('Coba Lagi'), findsOneWidget);
+  });
+
+  testWidgets('menampilkan judul, penulis, dan tahun buku',
+      (WidgetTester tester) async {
+    repository.result = [
+      const Book(
+        id: '/works/OL123W',
+        title: 'Flutter for Beginners',
+        authors: ['A. Writer'],
+        firstPublishYear: 2024,
+      ),
+    ];
+
+    await pumpExploreScreen(tester);
+    await searchFor(tester, 'flutter');
+    await tester.pumpAndSettle();
+
+    expect(provider.status, BookStatus.success);
+    expect(find.byType(BookCard), findsOneWidget);
+    expect(find.text('Flutter for Beginners'), findsOneWidget);
+    expect(find.text('A. Writer'), findsOneWidget);
+    expect(find.text('2024'), findsOneWidget);
   });
 }
