@@ -11,9 +11,10 @@ enum ReadingNoteStatus {
 }
 
 class ReadingNoteProvider extends ChangeNotifier {
-  ReadingNoteProvider({required this._repository});
+  // Parameter publik diperlukan untuk dependency injection pada tes.
+  ReadingNoteProvider({required this.repository});
 
-  final ReadingNoteRepository _repository;
+  final ReadingNoteRepository repository;
 
   List<ReadingNote> _notes = [];
   ReadingNoteStatus _status = ReadingNoteStatus.initial;
@@ -31,7 +32,7 @@ class ReadingNoteProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _notes = await _repository.getReadingNotes();
+      _notes = await repository.getReadingNotes();
       _status = ReadingNoteStatus.success;
     } catch (error, stackTrace) {
       _status = ReadingNoteStatus.error;
@@ -49,7 +50,7 @@ class ReadingNoteProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final createdNote = await _repository.addReadingNote(note);
+      final createdNote = await repository.addReadingNote(note);
       _notes = [createdNote, ..._notes];
       _status = ReadingNoteStatus.success;
       return true;
@@ -70,7 +71,7 @@ class ReadingNoteProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final updatedNote = await _repository.updateReadingNote(note);
+      final updatedNote = await repository.updateReadingNote(note);
       _notes = _notes
           .map((item) => item.id == updatedNote.id ? updatedNote : item)
           .toList();
@@ -91,7 +92,7 @@ class ReadingNoteProvider extends ChangeNotifier {
     _errorMessage = null;
 
     try {
-      await _repository.deleteReadingNote(id);
+      await repository.deleteReadingNote(id);
       _notes = _notes.where((item) => item.id != id).toList();
       _status = ReadingNoteStatus.success;
       notifyListeners();
@@ -110,3 +111,11 @@ class ReadingNoteProvider extends ChangeNotifier {
     notifyListeners();
   }
 }
+
+
+
+
+
+
+
+
